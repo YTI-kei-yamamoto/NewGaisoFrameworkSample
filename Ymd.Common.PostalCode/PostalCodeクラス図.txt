@@ -1,0 +1,135 @@
+@startuml
+
+    namespace Ymd.Common.Postal {
+        class PostalCodeDialog {
+            <<static>>
+            +ShowDialog(mdbPath: string, includePrefecture: bool) string$
+            +ShowAddressDialog(mdbPath: string) PostalAddress$
+        }
+
+        class PostalSearchForm {
+            <<internal>>
+            -PostalDataAccess _dataAccess
+            -AddressToZipTabControl _addressToZipTab
+            -TabControl tabControlMain
+            -DataGridView dgvCandidates
+            -TextBox txtZipCode
+            -TextBox txtOutputTab1
+            +string SelectedOutputText
+            +PostalAddress SelectedAddressData
+            +PostalSearchForm(mdbPath: string)
+            -txtZipCode_TextChanged(sender: object, e: EventArgs) void
+            -dgvCandidates_SelectionChanged(sender: object, e: EventArgs) void
+            -btnOk_Click(sender: object, e: EventArgs) void
+            -btnCancel_Click(sender: object, e: EventArgs) void
+        }
+
+        class AddressToZipTabControl {
+            -PostalDataAccess _dataAccess
+            -HierarchyLevel _currentLevel
+            -string _selectedPrefecture
+            -string _selectedCity
+            -PostalAddress _selectedAddress
+            -List~AddressListItem~ _currentItems
+            -ListBox _lstAddress
+            -TextBox _txtOutput
+            +PostalAddress CurrentSelectedAddress
+            +string OutputAddressText
+            +event EventHandler AddressConfirmed
+            ~AddressToZipTabControl(dataAccess: PostalDataAccess)
+            -LoadPrefectureLevel() void
+            -LoadCityLevel(prefecture: string) void
+            -LoadTownLevel(prefecture: string, city: string) void
+            -UpdateCityBreadcrumbs(city: string) void
+            -BindListItems(items: List~AddressListItem~, assignGroupHeaders: bool) void
+            -ApplySelectedTown(address: PostalAddress) void
+            -UpdateOutputText() void
+        }
+
+        class HierarchyLevel {
+            <<enumeration>>
+            Prefecture
+            City
+            Town
+        }
+
+        class PostalDataAccess {
+            <<internal>>
+            -string _connectionString
+            +PostalDataAccess(mdbPath: string)
+            +SearchByPostalCode(postalCode: string, ignoreBranch: bool) List~PostalAddress~
+            +GetPrefectures() List~AddressListItem~
+            +GetCities(prefecture: string) List~AddressListItem~
+            +GetTowns(prefecture: string, city: string, candidatesOnly: bool) List~AddressListItem~
+        }
+
+        class PostalAddress {
+            <<sealed>>
+            +string JisCode
+            +string PostalCode
+            +string PrefectureKana
+            +string CityKana
+            +string TownKana
+            +string Prefecture
+            +string City
+            +string Town
+            +string FormattedPostalCode
+            +string DisplayTown
+            +PostalAddress(jisCode, postalCode, prefectureKana, cityKana, townKana, prefecture, city, town)
+            +GetOutputAddress(includePrefecture: bool) string
+        }
+
+        class AddressListItem {
+            <<internal>>
+            +string DisplayText
+            +string Kana
+            +string GroupHeaderChar
+            +string KanaRowKey
+            +PostalAddress AddressData
+        }
+
+        class KanaIndexHelper {
+            <<internal static>>
+            +string[] RowKeys$
+            +GetHeaderHiragana(kana: string, fallbackText: string) string$
+            +GetRowKey(kana: string, fallbackText: string) string$
+            -NormalizeSeion(hira: char) char$
+        }
+    }
+
+    namespace Ymd.Common.Postal.Tests {
+        class PostalCodeDialogTests {
+            <<TestClass>>
+            -string _testMdbPath
+            +Setup() void
+            +KanaIndexHelper_GetHeaderHiragana_Test() void
+            +KanaIndexHelper_GetRowKey_Test() void
+            +PostalAddress_GetOutputAddress_Test() void
+            +DataAccess_SearchByPostalCode_Test() void
+        }
+    }
+
+    ' 関連・依存関係
+    PostalCodeDialog ..> PostalSearchForm : 生成・表示
+    PostalCodeDialog ..> PostalAddress : 返却
+
+    PostalSearchForm *-- PostalDataAccess : 保持
+    PostalSearchForm *-- AddressToZipTabControl : タブ2として内包
+    PostalSearchForm --> PostalAddress : 選択結果を保持
+
+    AddressToZipTabControl --> PostalDataAccess : 階層データ取得
+    AddressToZipTabControl *-- HierarchyLevel : 状態管理
+    AddressToZipTabControl o-- AddressListItem : リスト項目保持
+    AddressToZipTabControl --> PostalAddress : 選択町域を保持
+    AddressToZipTabControl ..> KanaIndexHelper : 見出し・行キー判定
+
+    PostalDataAccess ..> PostalAddress : 生成・返却
+    PostalDataAccess ..> AddressListItem : 生成・返却
+    PostalDataAccess ..> KanaIndexHelper : 行キー付与
+
+    AddressListItem --> PostalAddress : 内包
+
+    PostalCodeDialogTests ..> KanaIndexHelper : 単体テスト
+    PostalCodeDialogTests ..> PostalAddress : 単体テスト
+    PostalCodeDialogTests ..> PostalDataAccess : 結合テスト
+@enduml
