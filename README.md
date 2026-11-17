@@ -1,0 +1,2 @@
+# NewGaisoFrameworkSample
+新外装フレームワークサンプル
