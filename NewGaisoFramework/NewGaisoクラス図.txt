@@ -1,0 +1,357 @@
+@startuml
+
+    ' ==========================================
+    ' ドメイン層：工事・建物・外装階層 (Models)
+    ' ==========================================
+    class KojiData {
+        <<Aggregate Root>>
+        +string KojiNo
+        +string KojiName
+        +double TotalFloorArea
+        +List~GridLineAxis~ GridLines
+        +GaisoModel GaisoModel
+        +SaveToJson(string filePath) void
+        +LoadFromJson(string filePath)$ KojiData
+        +CreateDefaultSample()$ KojiData
+    }
+
+    class GridLineAxis {
+        <<Value Object>>
+        +string AxisName
+        +GridDirection Direction
+        +double Coordinate
+    }
+
+    class GridDirection {
+        <<Enumeration>>
+        X
+        Y
+    }
+
+    class GaisoModel {
+        <<Entity>>
+        +List~GaisoPlane~ GaisoPlanes
+        +IEnumerable~GaisoSurface~ AllSurfaces
+        +double TotalExteriorWallArea
+        +InitializeSampleBuilding() void
+    }
+
+    class GaisoPlane {
+        <<Entity>>
+        +string PlaneId
+        +string PlaneName
+        +bool IsWallPlane
+        +List~GaisoSurface~ Surfaces
+    }
+
+    class GaisoSurface {
+        <<Entity>>
+        +string SurfaceId
+        +string FloorGroup
+        +string Category
+        +string SurfaceName
+        +double NetArea
+        +Vector3D Origin
+        +Vector3D UAxis
+        +Vector3D VAxis
+        +Vector3D Normal
+        +double Width
+        +double Height
+        +List~OpeningRect~ Openings
+        +List~ExteriorSurfaceElement~ Elements
+        +bool IsSpecialDetail
+        +string SpecialDetailNote
+    }
+
+    class ExteriorSurfaceElement {
+        <<Entity>>
+        +string Id
+        +string Name
+        +int OrderIndex
+        -List~ExteriorMaterialComponent~ _materialComponents
+        +IReadOnlyList~ExteriorMaterialComponent~ MaterialComponents
+        +AddComponent(ExteriorMaterialComponent component) void
+        +RemoveComponent(string componentId) bool
+        +MoveUpComponent(string componentId) void
+        +MoveDownComponent(string componentId) void
+    }
+
+    class ExteriorMaterialComponent {
+        <<Abstract Entity>>
+        +string Id
+        +string Name
+        +int OrderIndex
+    }
+
+    class PanelComponent {
+        <<Entity>>
+        +string NameCode
+        +string Material
+        +double Thickness
+        +string Color
+    }
+
+    class MatComponent {
+        <<Entity>>
+        +string NameCode
+        +double Thickness
+        +string Color
+    }
+
+    class BoardComponent {
+        <<Entity>>
+        +string NameCode
+        +double Thickness
+    }
+
+    class FittingsComponent {
+        <<Entity>>
+        +string FittingsType
+        +double Width
+        +double Height
+    }
+
+    class Vector3D {
+        <<Value Object (struct)>>
+        +double X
+        +double Y
+        +double Z
+        +double Length
+        +Normalize() Vector3D
+    }
+
+    class OpeningRect {
+        <<Value Object>>
+        +string FittingMark
+        +double U
+        +double V
+        +double Width
+        +double Height
+        +bool IsDoor
+    }
+
+    ' ==========================================
+    ' ドメイン＆インフラ層：マスタDB・翻訳DB・DWG・設定
+    ' ==========================================
+    class MaterialCategory {
+        <<Enumeration>>
+        Panel
+        Mat
+        Board
+        Fittings
+    }
+
+    class MaterialCatalogItem {
+        <<Master Value Object>>
+        +string CatalogCode
+        +string Name
+        +MaterialCategory Category
+        +string Material
+        +double Thickness
+        +string Color
+        +string FittingsType
+        +double DefaultWidth
+        +double DefaultHeight
+        +string Options
+        +CreateComponent() ExteriorMaterialComponent
+    }
+
+    class IMaterialCatalogRepository {
+        <<Interface>>
+        +GetAllCatalogItems() List~MaterialCatalogItem~
+        +GetCatalogItemsByCategory(MaterialCategory category) List~MaterialCatalogItem~
+    }
+
+    class SqliteMaterialCatalogRepository {
+        <<Infrastructure : SQLite Catalog>>
+        -string _connectionString
+        +SqliteMaterialCatalogRepository(string dbFilePath)
+        +GetAllCatalogItems() List~MaterialCatalogItem~
+        +GetCatalogItemsByCategory(MaterialCategory category) List~MaterialCatalogItem~
+        -InitializeDatabase(string dbFilePath) void
+    }
+
+    class LocalizationService {
+        <<Service : SQLite i18n Cache>>
+        +string LangJa$
+        +string LangEn$
+        +string LangZh$
+        +string CurrentLanguage$
+        -Dictionary~string, Dictionary~string, string~~ _dictionaries$
+        +event EventHandler LanguageChanged$
+        +Initialize(string dbFilePath)$ void
+        +T(string key)$ string
+        -LoadFromDatabase(SqliteConnection conn)$ void
+        -CreateTableAndInsertSeedData(SqliteConnection conn)$ void
+    }
+
+    class LocalizedDisplayNameAttribute {
+        <<Custom Attribute>>
+        -string _resourceKey
+        +string DisplayName
+    }
+
+    class LocalizedCategoryAttribute {
+        <<Custom Attribute>>
+        -string _resourceKey
+        #GetLocalizedString(string value) string
+    }
+
+    class OdaDwgKojiDataReader {
+        <<Anti-Corruption Layer : ODA SDK>>
+        +LoadFromDwg(string dwgFilePath) KojiData
+        -BuildGridLineAxes(...) List~GridLineAxis~
+    }
+
+    class UserLayoutSettings {
+        <<Infrastructure : User Settings>>
+        +int WindowX
+        +int WindowY
+        +int WindowWidth
+        +int WindowHeight
+        +bool IsMaximized
+        +double LeftPaneRatio
+        +double CenterPaneRatio
+        +double RightPaneRatio
+        +double TopAreaHeightRatio
+        +bool IsLeftPanelCollapsed
+        +bool IsRightPanelCollapsed
+        +string Language
+        +Load()$ UserLayoutSettings
+        +Save() void
+        +NormalizeRatios() void
+    }
+
+    ' ==========================================
+    ' プレゼンテーション層：WinForms & WPF 3D/2D
+    ' ==========================================
+    class Program {
+        <<Application Bootstrap>>
+        +Main(string[] args)$ void
+    }
+
+    class MainForm {
+        <<View : WinForms>>
+        -KojiData _kojiData
+        -string _exchangeJsonPath
+        -GaisoSurface _selectedSurface
+        -IMaterialCatalogRepository _catalogRepository
+        -UserLayoutSettings _layoutSettings
+        -Rectangle _lastNormalBounds
+        -ComboBox cmbLanguage
+        -Dictionary~string, Button~ _ribbonTabButtons
+        -Dictionary~string, FlowLayoutPanel~ _ribbonTabPanels
+        -ExteriorViewportControl _viewport3D
+        +MainForm(KojiData kojiData, string exchangeJsonPath)
+        -ApplyLocalization() void
+        -SelectRibbonTab(string tabKey) void
+        -SetPaneRatios(double leftRatio, double centerRatio, double rightRatio) void
+        -ApplySavedLayoutSettings(UserLayoutSettings settings) void
+        -SaveCurrentLayoutSettings() void
+        -BuildModelTreeNodes() void
+        -RefreshComponentList() void
+        -UpdatePropertyGrid(ExteriorMaterialComponent comp) void
+    }
+
+    class MaterialCatalogDialog {
+        <<View : WinForms Dialog>>
+        -IMaterialCatalogRepository _catalogRepository
+        +MaterialCatalogItem SelectedCatalogItem
+        +MaterialCatalogDialog(IMaterialCatalogRepository catalogRepository)
+        -ApplyLocalization() void
+        -ConfirmSelection() void
+        -LoadCatalogData() void
+    }
+
+    class ExteriorViewportControl {
+        <<View : WPF 3D / 2D Orthographic>>
+        -HelixViewport3D _viewport
+        -LinesVisual3D _gridAxisLines
+        -LinesVisual3D _local2DAxisLines
+        -Canvas _annotationCanvas
+        -List~AnnotationAnchor~ _annotationAnchors
+        -Dictionary~GeometryModel3D, string~ _modelToSurfaceIdMap
+        -KojiData _kojiData
+        -string _selectedSurfaceId
+        -bool _showGridAndDimensions
+        -bool _is2DSurfaceMode
+        +event EventHandler~string~ SurfaceClicked
+        +BindKojiData(KojiData kojiData, string selectedSurfaceId) void
+        +ShowSurface2DPlane(GaisoSurface surface) void
+        +SwitchTo3DMode() void
+        +RefreshLocalizedTexts() void
+        +RebuildBuildingMeshes() void
+        +SetSelectedSurface(string surfaceId) void
+        +ToggleGridAndDimensions() void
+        +ZoomExtents() void
+        -Rebuild2DSurfaceOverlay(...) void
+        -Rebuild3DGridOverlay() void
+        -UpdateOverlayAnnotationPositions() void
+    }
+
+    class AnnotationAnchor {
+        <<Nested Helper>>
+        +Point3D WorldPosition
+        +FrameworkElement VisualElement
+    }
+
+    class MaterialTextureService {
+        <<Presentation Service>>
+        +CreateHelix3DMaterial(PanelComponent comp)$ Material
+        +CreateFallbackMaterial()$ Material
+    }
+
+    ' ==========================================
+    ' 継承・実装・集約・依存関係
+    ' ==========================================
+    ExteriorMaterialComponent <|-- PanelComponent
+    ExteriorMaterialComponent <|-- MatComponent
+    ExteriorMaterialComponent <|-- BoardComponent
+    ExteriorMaterialComponent <|-- FittingsComponent
+
+    IMaterialCatalogRepository <|.. SqliteMaterialCatalogRepository : 実装
+
+    KojiData "1" *-- "1" GaisoModel : 集約所有
+    KojiData "1" *-- "0..*" GridLineAxis : 通り芯定義
+    GridLineAxis --> GridDirection : 方向
+
+    GaisoModel "1" *-- "1..*" GaisoPlane : 外装平面群
+    GaisoPlane "1" *-- "1..*" GaisoSurface : 外装面群
+    GaisoSurface "1" *-- "1..*" ExteriorSurfaceElement : 面要素群
+    GaisoSurface "1" *-- "4" Vector3D : 原点・軸・法線
+    GaisoSurface "1" *-- "0..*" OpeningRect : 開口情報
+
+    ExteriorSurfaceElement "1" *-- "0..*" ExteriorMaterialComponent : 構成要素(順序管理)
+
+    MaterialCatalogItem --> MaterialCategory : 区分
+    MaterialCatalogItem ..> ExteriorMaterialComponent : CreateComponent()生成
+
+    ExteriorMaterialComponent ..> LocalizedDisplayNameAttribute : プロパティ表示名
+    ExteriorMaterialComponent ..> LocalizedCategoryAttribute : カテゴリ表示名
+    LocalizedDisplayNameAttribute ..> LocalizationService : 翻訳取得
+    LocalizedCategoryAttribute ..> LocalizationService : 翻訳取得
+
+    Program ..> LocalizationService : Translations.db初期化
+    Program ..> OdaDwgKojiDataReader : DWG読込
+    Program ..> KojiData : 工事データ生成
+    Program ..> MainForm : 起動
+
+    MainForm --> KojiData : モデル操作
+    MainForm --> GaisoSurface : 選択中面
+    MainForm --> IMaterialCatalogRepository : カタログDB参照
+    MainForm --> UserLayoutSettings : 画面比率・言語設定保存
+    MainForm *-- ExteriorViewportControl : ElementHost内包
+    MainForm ..> LocalizationService : 言語切替・UI更新
+    MainForm ..> MaterialCatalogDialog : モーダル表示
+    MainForm ..> OdaDwgKojiDataReader : DWGインポート
+
+    MaterialCatalogDialog --> IMaterialCatalogRepository : マスタ検索
+    MaterialCatalogDialog --> MaterialCatalogItem : 選択結果保持
+    MaterialCatalogDialog ..> LocalizationService : ダイアログ翻訳
+
+    ExteriorViewportControl *-- "0..*" AnnotationAnchor : 2D投影ラベル
+    ExteriorViewportControl --> KojiData : 3D/2Dメッシュ構築
+    ExteriorViewportControl ..> MaterialTextureService : 3Dマテリアル生成
+    ExteriorViewportControl ..> LocalizationService : HUDテキスト翻訳
+    ExteriorViewportControl ..> MainForm : SurfaceClicked通知
+@enduml

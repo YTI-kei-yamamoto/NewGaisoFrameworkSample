@@ -1,0 +1,18 @@
+﻿################################################################################
+# この .gitignore ファイルは Microsoft(R) Visual Studio によって自動的に作成されました。
+################################################################################
+
+/NewGaisoFramework/.vs
+/NewGaisoFramework/NewGaiso/.vs
+/NewGaisoFramework/NewGaiso/bin
+/NewGaisoFramework/NewGaiso/obj
+*.xlsx
+/NewGaisoFramework/MaterialCatalog_Convert.mdb
+/NewGaisoFramework/Translations_Convert.mdb
+/Ymd.Common.PostalCode/.vs
+/Ymd.Common.PostalCode/WinFormsApp1/bin/x64
+/Ymd.Common.PostalCode/WinFormsApp1/obj
+/Ymd.Common.PostalCode/Ymd.Common.Postal/.vs
+/Ymd.Common.PostalCode/Ymd.Common.Postal/bin/x64
+/Ymd.Common.PostalCode/Ymd.Common.Postal/obj
+/Lib

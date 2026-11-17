@@ -1,0 +1,60 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>YmdExteriorSimulator</AssemblyName>
+    <RootNamespace>Ymd.Gaiso.Simulator</RootNamespace>
+    <Platforms>AnyCPU;x64</Platforms>
+    
+    <!-- 開発環境の ODA SDK (v25.12 vc17) パスに合わせて書き換え -->
+    <!--<OdaBinDir>C:\ODA\Drawings_25.12\exe\vc17_amd64dll</OdaBinDir>-->
+    <OdaBinDir>..\..\Lib\ODASDKLibrary\1.0.0\net8.0-windows</OdaBinDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="HelixToolkit.Wpf" Version="3.1.2" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.15" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="DatabaseLibrary">
+      <HintPath>..\..\Lib\DatabaseLibrary\1.0.0\netstandard2.0\DatabaseLibrary.dll</HintPath>
+    </Reference>
+    <Reference Include="GeometryLibrary">
+      <HintPath>..\..\Lib\GeometryLibrary\1.0.0\netstandard2.0\GeometryLibrary.dll</HintPath>
+    </Reference>
+    <Reference Include="ODASDKLibrary">
+      <HintPath>..\..\Lib\ODASDKLibrary\1.0.0\net8.0-windows\ODASDKLibrary.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Data.Odbc">
+      <HintPath>..\..\Lib\DatabaseLibrary\1.0.0\netstandard2.0\System.Data.Odbc.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Data.OleDb">
+      <HintPath>..\..\Lib\DatabaseLibrary\1.0.0\netstandard2.0\System.Data.OleDb.dll</HintPath>
+    </Reference>
+    <Reference Include="TD_Mgd_25.12_17">
+      <HintPath>$(OdaBinDir)\TD_Mgd_25.12_17.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="CopyOdaRuntimeFiles" AfterTargets="Build">
+    <ItemGroup>
+      <OdaNativeFiles Include="$(OdaBinDir)\*.dll;$(OdaBinDir)\*.tx" />
+    </ItemGroup>
+    <Copy SourceFiles="@(OdaNativeFiles)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>
