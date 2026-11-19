@@ -30,6 +30,7 @@ namespace Ymd.Common.Postal
         private RadioButton _rdoCandidatesOnly;
 
         public PostalAddress CurrentSelectedAddress => _selectedAddress;
+        public bool IsPrefectureChecked => _chkAddPrefecture.Checked;
         
         private string _outputText = string.Empty;
         public string OutputAddressText => _outputText;

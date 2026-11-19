@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.VisualBasic;
+using System;
+using System.IO;
 using System.Windows.Forms;
 
 namespace Ymd.Common.Postal
@@ -13,6 +15,10 @@ namespace Ymd.Common.Postal
         /// <returns>選択された住所文字列（キャンセル時はnull）</returns>
         public static string ShowDialog(string mdbPath, bool includePrefecture = true)
         {
+            if (!File.Exists(mdbPath))
+            {
+                throw new FileNotFoundException("郵便番号データベースが見つかりません。", mdbPath);
+            }
             using (var form = new PostalSearchForm(mdbPath))
             {
                 if (form.ShowDialog() == DialogResult.OK)
@@ -30,11 +36,14 @@ namespace Ymd.Common.Postal
         /// <returns>選択された住所オブジェクト（キャンセル時はnull）</returns>
         public static PostalAddress ShowAddressDialog(string mdbPath)
         {
+            if (!File.Exists(mdbPath))
+            {
+                throw new FileNotFoundException("郵便番号データベースが見つかりません。", mdbPath);
+            }
             using (var form = new PostalSearchForm(mdbPath))
             {
                 if (form.ShowDialog() == DialogResult.OK)
                 {
-                    form.SelectedAddressData.OutputAddr = form.SelectedOutputText;
                     return form.SelectedAddressData;
                 }
             }
