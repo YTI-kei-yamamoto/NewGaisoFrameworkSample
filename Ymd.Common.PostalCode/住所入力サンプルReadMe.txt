@@ -1,4 +1,3 @@
-PostalData.7zを解凍して、C:\YMD\DATA フォルダに入れてください
-
-住所入力サンプルは以下のEXEを実行
-WinFormsApp1.exe
+・住所入力サンプル.7zを適当なフォルダに解凍
+・住所入力サンプルは以下のEXEを実行
+  WinFormsApp1.exe
